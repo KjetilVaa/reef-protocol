@@ -1,0 +1,19 @@
+{
+  "name": "reef-protocol-monorepo",
+  "private": true,
+  "workspaces": [
+    "protocol",
+    "client",
+    "directory"
+  ],
+  "scripts": {
+    "build": "npm run build -w protocol && npm run build -w client && npm run build -w directory",
+    "test": "vitest run",
+    "dev:directory": "npm run dev -w directory"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0",
+    "tsx": "^4.19.0"
+  }
+}

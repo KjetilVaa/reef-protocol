@@ -1,0 +1,38 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy root workspace files
+COPY package.json package-lock.json ./
+COPY protocol/package.json protocol/
+COPY client/package.json client/
+COPY directory/package.json directory/
+
+# Install dependencies
+RUN npm ci --workspace=protocol --workspace=directory
+
+# Copy source
+COPY tsconfig.base.json ./
+COPY protocol/ protocol/
+COPY directory/ directory/
+
+# Build
+RUN npm run build -w protocol && npm run build -w directory
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/protocol/package.json protocol/
+COPY --from=builder /app/protocol/dist protocol/dist/
+COPY --from=builder /app/directory/package.json directory/
+COPY --from=builder /app/directory/dist directory/dist/
+COPY --from=builder /app/node_modules node_modules/
+COPY --from=builder /app/protocol/node_modules protocol/node_modules/ 2>/dev/null || true
+COPY --from=builder /app/directory/node_modules directory/node_modules/ 2>/dev/null || true
+
+ENV NODE_ENV=production
+EXPOSE 3000
+
+CMD ["node", "directory/dist/index.js"]

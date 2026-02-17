@@ -1,0 +1,57 @@
+import { getOrCreateIdentity, getConfigDir } from "../identity.js";
+
+const DEFAULT_DIRECTORY_URL = "http://localhost:3000";
+
+interface RegisterOptions {
+  name?: string;
+  bio?: string;
+  skills?: string;
+}
+
+export async function registerCommand(
+  options: RegisterOptions,
+): Promise<void> {
+  const configDir = getConfigDir();
+  const identity = getOrCreateIdentity(configDir);
+
+  const directoryUrl =
+    process.env.REEF_DIRECTORY_URL || DEFAULT_DIRECTORY_URL;
+
+  const body = {
+    address: identity.address,
+    name:
+      options.name ||
+      process.env.REEF_AGENT_NAME ||
+      `Agent ${identity.address.slice(0, 8)}`,
+    bio: options.bio || process.env.REEF_AGENT_BIO || "",
+    skills: options.skills
+      ? options.skills.split(",").map((s) => s.trim())
+      : [],
+    reefVersion: "0.1.0",
+  };
+
+  try {
+    const res = await fetch(`${directoryUrl}/agents/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      console.error(
+        `Registration failed: ${res.status} ${res.statusText}`,
+      );
+      return;
+    }
+
+    const data = (await res.json()) as { agentNumber: number };
+    console.log(`Registered with directory!`);
+    console.log(`  Name:         ${body.name}`);
+    console.log(`  Address:      ${identity.address}`);
+    console.log(`  Agent number: #${data.agentNumber}`);
+  } catch (err) {
+    console.error(
+      `Could not reach directory: ${(err as Error).message}`,
+    );
+  }
+}

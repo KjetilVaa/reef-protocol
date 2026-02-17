@@ -1,0 +1,21 @@
+{
+  "name": "@reef-protocol/protocol",
+  "version": "0.1.0",
+  "description": "Shared message types, envelope codec, and validation for Reef Protocol",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^3.24.0"
+  }
+}

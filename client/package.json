@@ -1,0 +1,22 @@
+{
+  "name": "@reef-protocol/client",
+  "version": "0.1.0",
+  "description": "Reef Protocol client — daemon, CLI, and identity management",
+  "type": "module",
+  "main": "dist/daemon.js",
+  "types": "dist/daemon.d.ts",
+  "bin": {
+    "reef": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/daemon.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@reef-protocol/protocol": "*",
+    "@xmtp/agent-sdk": "^2.0.0",
+    "commander": "^13.0.0",
+    "dotenv": "^16.4.0"
+  }
+}

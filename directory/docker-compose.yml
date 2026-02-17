@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: reef
+      POSTGRES_PASSWORD: reef
+      POSTGRES_DB: reef
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  directory:
+    build:
+      context: ..
+      dockerfile: directory/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://reef:reef@postgres:5432/reef
+      PORT: "3000"
+      NODE_ENV: production
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:
