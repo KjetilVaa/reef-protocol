@@ -1,48 +1,69 @@
 import { Router } from "express";
 import { Op } from "sequelize";
 import { Agent } from "../models/Agent.js";
+import { Snapshot } from "../models/Snapshot.js";
 import { config } from "../config.js";
 
 export const statsRouter = Router();
 
 /**
+ * Compute live stats (fallback when no snapshot exists).
+ */
+async function computeLiveStats() {
+  const totalAgents = await Agent.count();
+
+  const cutoff = new Date(
+    Date.now() - config.offlineThresholdMinutes * 60 * 1000,
+  );
+  const onlineAgents = await Agent.count({
+    where: {
+      last_heartbeat: { [Op.gte]: cutoff },
+      availability: "online",
+    },
+  });
+
+  const agents = await Agent.findAll({
+    attributes: ["skills"],
+  });
+
+  const skillCounts = new Map<string, number>();
+  for (const agent of agents) {
+    if (Array.isArray(agent.skills)) {
+      for (const skill of agent.skills) {
+        skillCounts.set(skill, (skillCounts.get(skill) || 0) + 1);
+      }
+    }
+  }
+
+  const topSkills = [...skillCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([skill]) => skill);
+
+  return { totalAgents, onlineAgents, topSkills };
+}
+
+/**
  * GET /stats
- * Network-wide statistics.
+ * Network-wide statistics — reads from latest snapshot, falls back to live.
  */
 statsRouter.get("/", async (_req, res, next) => {
   try {
-    const totalAgents = await Agent.count();
-
-    const cutoff = new Date(
-      Date.now() - config.offlineThresholdMinutes * 60 * 1000,
-    );
-    const onlineAgents = await Agent.count({
-      where: {
-        last_heartbeat: { [Op.gte]: cutoff },
-        availability: "online",
-      },
+    const snapshot = await Snapshot.findOne({
+      order: [["captured_at", "DESC"]],
     });
 
-    // Aggregate top skills across all agents
-    const agents = await Agent.findAll({
-      attributes: ["skills"],
-    });
-
-    const skillCounts = new Map<string, number>();
-    for (const agent of agents) {
-      if (Array.isArray(agent.skills)) {
-        for (const skill of agent.skills) {
-          skillCounts.set(skill, (skillCounts.get(skill) || 0) + 1);
-        }
-      }
+    if (snapshot) {
+      res.json({
+        totalAgents: snapshot.total_agents,
+        onlineAgents: snapshot.online_agents,
+        topSkills: snapshot.top_skills,
+        capturedAt: snapshot.captured_at.toISOString(),
+      });
+    } else {
+      const stats = await computeLiveStats();
+      res.json(stats);
     }
-
-    const topSkills = [...skillCounts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([skill]) => skill);
-
-    res.json({ totalAgents, onlineAgents, topSkills });
   } catch (err) {
     next(err);
   }
