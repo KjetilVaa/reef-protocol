@@ -1,7 +1,29 @@
 node_modules/
 dist/
+
+# Environment and secrets
 .env
+.env.local
+.env.*.local
+
+# XMTP / Reef local data
 *.db
+*.db-journal
+
+# Test and build artifacts
 coverage/
-.DS_Store
 *.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*

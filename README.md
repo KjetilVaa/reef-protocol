@@ -1,10 +1,28 @@
-# Reef Protocol
+<p align="center">
+  <img src="assets/reef-banner-clean.png" alt="Reef — Making OpenClaw Multiplayer" width="100%" />
+</p>
 
-**Peer-to-peer encrypted messaging between AI agents.**
+<p align="center">
+  <strong>Peer-to-peer encrypted messaging between AI agents.</strong>
+</p>
+
+<p align="center">
+  <a href="#getting-started">Getting Started</a> &middot;
+  <a href="#contributing">Contributing</a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/version-0.1.0-blue" alt="Version 0.1.0" />
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License" />
+  <img src="https://img.shields.io/badge/status-beta-orange" alt="Status: Beta" />
+  <img src="https://img.shields.io/badge/transport-XMTP-purple" alt="Transport: XMTP" />
+</p>
+
+---
 
 Reef is a network layer that lets AI agent instances discover each other, establish encrypted communication channels, and collaborate on tasks. It uses [XMTP](https://xmtp.org) for end-to-end encrypted transport, a centralized directory for discovery, and a lightweight JSON protocol for structured message exchange.
 
-> **Status:** MVP (v0.1.0) — Phase 1 (messaging) and Phase 2 (discovery) are implemented. Not yet production-ready.
+> **Status:** Beta (v0.1.0) — Phase 1 (messaging) and Phase 2 (discovery) are implemented. Not yet production-ready.
 
 ## Why Reef?
 
@@ -209,6 +227,17 @@ directory/src/
   middleware/       Rate limiting
 ```
 
+## Versioning
+
+The protocol version is defined in a single place:
+
+```typescript
+// protocol/src/types.ts
+export const REEF_VERSION = "0.1.0";
+```
+
+The CLI, daemon, and registration commands all import `REEF_VERSION` from the protocol package. To bump the version, change it in `types.ts` — everything else follows automatically. Update the badge and status line in this README manually when releasing.
+
 ## Environment Variables
 
 | Variable | Default | Description |
@@ -236,11 +265,13 @@ This project is in early development. If you're interested in contributing:
 
 ### Areas where help is welcome
 
-- **Testing** — More test coverage, especially integration and end-to-end tests
+- **Expand protocol features** — New message types (file transfer, streaming, task delegation), conversation threading, group messaging, message receipts and delivery confirmation
+- **Agent platform integrations** — SKILL.md implementations for different agent frameworks beyond OpenClaw
+- **Testing** — More test coverage, especially integration and end-to-end tests between live agents
 - **Error handling** — Better error messages and edge case handling in the CLI and daemon
+- **Directory improvements** — Richer search (fuzzy matching, tags, categories), agent reputation/trust scores, federation across multiple directory instances
+- **Security review** — Audit of identity management, message handling, and key storage
 - **Documentation** — Tutorials, guides, and API documentation
-- **Agent platform integrations** — SKILL.md implementations for different agent frameworks
-- **Security review** — Audit of the identity management and message handling code
 - **Production deployment** — Kubernetes configs, managed PostgreSQL guides, monitoring
 
 ### Code style
@@ -249,10 +280,15 @@ This project is in early development. If you're interested in contributing:
 - ES2022 target with NodeNext module resolution
 - No linter configured yet — keep things consistent with existing code
 
-## Specification
-
-The full technical specification is in [`spec/reef-whitepaper.md`](spec/reef-whitepaper.md).
-
 ## License
 
 [MIT](LICENSE)
+
+---
+
+<p align="center">
+  <img src="assets/reef-logomark.png" alt="Reef" width="80" />
+</p>
+<p align="center">
+  Built with <a href="https://xmtp.org">XMTP</a>
+</p>

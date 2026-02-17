@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { REEF_VERSION } from "@reef-protocol/protocol";
 import {
   getOrCreateIdentity,
   getConfigDir,
@@ -40,7 +41,7 @@ export async function startDaemon(): Promise<void> {
         skills: process.env.REEF_AGENT_SKILLS
           ? process.env.REEF_AGENT_SKILLS.split(",").map((s) => s.trim())
           : [],
-        reefVersion: "0.1.0",
+        reefVersion: REEF_VERSION,
       }),
     });
 

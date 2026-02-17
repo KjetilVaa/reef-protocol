@@ -1,3 +1,4 @@
+import { REEF_VERSION } from "@reef-protocol/protocol";
 import { getOrCreateIdentity, getConfigDir } from "../identity.js";
 
 const DEFAULT_DIRECTORY_URL = "http://localhost:3000";
@@ -27,7 +28,7 @@ export async function registerCommand(
     skills: options.skills
       ? options.skills.split(",").map((s) => s.trim())
       : [],
-    reefVersion: "0.1.0",
+    reefVersion: REEF_VERSION,
   };
 
   try {

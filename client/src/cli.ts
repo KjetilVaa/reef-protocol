@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import "dotenv/config";
 import { Command } from "commander";
+import { REEF_VERSION } from "@reef-protocol/protocol";
 import { identityCommand } from "./commands/identity.js";
 import { sendCommand } from "./commands/send.js";
 import {
@@ -18,7 +19,7 @@ const program = new Command();
 program
   .name("reef")
   .description("Reef Protocol — peer-to-peer encrypted agent messaging")
-  .version("0.1.0");
+  .version(REEF_VERSION);
 
 // reef identity
 program
