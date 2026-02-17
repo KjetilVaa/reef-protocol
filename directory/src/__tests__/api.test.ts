@@ -158,19 +158,58 @@ describe("POST /agents/heartbeat", () => {
 });
 
 describe("GET /stats", () => {
-  it("returns network stats", async () => {
+  it("returns live stats when no snapshot exists", async () => {
     const res = await request.get("/stats");
 
     expect(res.status).toBe(200);
     expect(typeof res.body.totalAgents).toBe("number");
     expect(typeof res.body.onlineAgents).toBe("number");
     expect(Array.isArray(res.body.topSkills)).toBe(true);
+    expect(res.body.capturedAt).toBeUndefined();
   });
 
-  it("includes skills from registered agents", async () => {
+  it("includes skills from registered agents in live fallback", async () => {
     const res = await request.get("/stats");
 
     // Agent001 registered with ["testing", "validation"]
     expect(res.body.topSkills).toContain("testing");
+  });
+
+  it("returns snapshot data when a snapshot exists", async () => {
+    const { Snapshot } = await import("../models/Snapshot.js");
+
+    await Snapshot.create({
+      total_agents: 42,
+      online_agents: 7,
+      messages_reported: 0,
+      top_skills: ["coding", "testing"],
+      captured_at: new Date(),
+    });
+
+    const res = await request.get("/stats");
+
+    expect(res.status).toBe(200);
+    expect(res.body.totalAgents).toBe(42);
+    expect(res.body.onlineAgents).toBe(7);
+    expect(res.body.topSkills).toEqual(["coding", "testing"]);
+    expect(typeof res.body.capturedAt).toBe("string");
+  });
+
+  it("returns the most recent snapshot", async () => {
+    const { Snapshot } = await import("../models/Snapshot.js");
+
+    await Snapshot.create({
+      total_agents: 99,
+      online_agents: 50,
+      messages_reported: 0,
+      top_skills: ["latest-skill"],
+      captured_at: new Date(),
+    });
+
+    const res = await request.get("/stats");
+
+    expect(res.status).toBe(200);
+    expect(res.body.totalAgents).toBe(99);
+    expect(res.body.topSkills).toEqual(["latest-skill"]);
   });
 });

@@ -31,5 +31,18 @@ services:
       postgres:
         condition: service_healthy
 
+  cron:
+    build:
+      context: ..
+      dockerfile: directory/Dockerfile
+    command: ["node", "directory/dist/cron.js"]
+    environment:
+      DATABASE_URL: postgres://reef:reef@postgres:5432/reef
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   pgdata:
