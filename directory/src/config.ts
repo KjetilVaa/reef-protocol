@@ -9,4 +9,6 @@ export const config = {
   offlineThresholdMinutes: 20,
   /** Sweep interval in milliseconds (5 min) */
   sweepIntervalMs: 5 * 60 * 1000,
+  /** Snapshot capture interval in milliseconds (10 min) */
+  snapshotIntervalMs: 10 * 60 * 1000,
 };
