@@ -1,5 +1,4 @@
-import { DataTypes, Model } from "sequelize";
-import { sequelize } from "../db.js";
+import { DataTypes, Model, type Sequelize } from "sequelize";
 
 export interface SnapshotAttributes {
   id?: number;
@@ -19,43 +18,45 @@ export class Snapshot extends Model<SnapshotAttributes> {
   declare captured_at: Date;
 }
 
-Snapshot.init(
-  {
-    id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true,
+export function initSnapshotModel(sequelize: Sequelize): void {
+  Snapshot.init(
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true,
+      },
+      total_agents: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      online_agents: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      messages_reported: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      top_skills: {
+        type: DataTypes.JSON,
+        allowNull: false,
+        defaultValue: [],
+      },
+      captured_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
     },
-    total_agents: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0,
+    {
+      sequelize,
+      tableName: "snapshots",
+      underscored: true,
+      timestamps: false,
     },
-    online_agents: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0,
-    },
-    messages_reported: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0,
-    },
-    top_skills: {
-      type: DataTypes.JSON,
-      allowNull: false,
-      defaultValue: [],
-    },
-    captured_at: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-    },
-  },
-  {
-    sequelize,
-    tableName: "snapshots",
-    underscored: true,
-    timestamps: false,
-  },
-);
+  );
+}

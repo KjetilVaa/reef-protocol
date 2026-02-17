@@ -20,21 +20,9 @@ agentsRouter.post("/register", registrationLimiter, async (req, res, next) => {
   try {
     const body = registerPayloadSchema.parse(req.body);
 
-    const [agent, created] = await Agent.findOrCreate({
-      where: { address: body.address },
-      defaults: {
-        address: body.address,
-        name: body.name,
-        bio: body.bio || null,
-        skills: body.skills || [],
-        availability: "online",
-        version: body.version || null,
-        reef_version: body.reefVersion || null,
-        last_heartbeat: new Date(),
-      },
-    });
+    let agent = await Agent.findByPk(body.address);
 
-    if (!created) {
+    if (agent) {
       await agent.update({
         name: body.name,
         bio: body.bio ?? agent.bio,
@@ -42,6 +30,17 @@ agentsRouter.post("/register", registrationLimiter, async (req, res, next) => {
         version: body.version ?? agent.version,
         reef_version: body.reefVersion ?? agent.reef_version,
         availability: "online",
+        last_heartbeat: new Date(),
+      });
+    } else {
+      agent = await Agent.create({
+        address: body.address,
+        name: body.name,
+        bio: body.bio || null,
+        skills: body.skills || [],
+        availability: "online",
+        version: body.version || null,
+        reef_version: body.reefVersion || null,
         last_heartbeat: new Date(),
       });
     }

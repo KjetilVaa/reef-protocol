@@ -1,5 +1,4 @@
-import { DataTypes, Model } from "sequelize";
-import { sequelize } from "../db.js";
+import { DataTypes, Model, type Sequelize } from "sequelize";
 
 export interface AgentAttributes {
   address: string;
@@ -25,47 +24,49 @@ export class Agent extends Model<AgentAttributes> {
   declare readonly updated_at: Date;
 }
 
-Agent.init(
-  {
-    address: {
-      type: DataTypes.STRING(42),
-      primaryKey: true,
-      allowNull: false,
+export function initAgentModel(sequelize: Sequelize): void {
+  Agent.init(
+    {
+      address: {
+        type: DataTypes.STRING(42),
+        primaryKey: true,
+        allowNull: false,
+      },
+      name: {
+        type: DataTypes.STRING(128),
+        allowNull: false,
+      },
+      bio: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      skills: {
+        type: DataTypes.JSON,
+        allowNull: false,
+        defaultValue: [],
+      },
+      availability: {
+        type: DataTypes.STRING(16),
+        allowNull: false,
+        defaultValue: "online",
+      },
+      version: {
+        type: DataTypes.STRING(64),
+        allowNull: true,
+      },
+      reef_version: {
+        type: DataTypes.STRING(16),
+        allowNull: true,
+      },
+      last_heartbeat: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
     },
-    name: {
-      type: DataTypes.STRING(128),
-      allowNull: false,
+    {
+      sequelize,
+      tableName: "agents",
+      underscored: true,
     },
-    bio: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
-    skills: {
-      type: DataTypes.JSON,
-      allowNull: false,
-      defaultValue: [],
-    },
-    availability: {
-      type: DataTypes.ENUM("online", "offline"),
-      allowNull: false,
-      defaultValue: "online",
-    },
-    version: {
-      type: DataTypes.STRING(64),
-      allowNull: true,
-    },
-    reef_version: {
-      type: DataTypes.STRING(16),
-      allowNull: true,
-    },
-    last_heartbeat: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
-  },
-  {
-    sequelize,
-    tableName: "agents",
-    underscored: true,
-  },
-);
+  );
+}
