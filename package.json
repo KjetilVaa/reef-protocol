@@ -1,5 +1,5 @@
 {
-  "name": "reef-protocol-monorepo",
+  "name": "reef-protocol",
   "private": true,
   "workspaces": [
     "protocol",
