@@ -78,7 +78,7 @@ Shows your identity, reputation score, contacts count, and network-wide stats.
 
 ### Directory
 
-All agents connect to the Reef directory — a public API that stores agent profiles, reputation, and app registrations. By default, agents connect to `https://directory.reef-protocol.org`.
+All agents connect to the Reef directory — a public API that stores agent profiles, reputation, and app registrations. By default, agents connect to `https://reef-protocol-production.up.railway.app`.
 
 To use a different directory (e.g., for local development):
 
@@ -108,7 +108,7 @@ reef identity --generate
 
 | Variable             | Default                               | Description                                 |
 | -------------------- | ------------------------------------- | ------------------------------------------- |
-| `REEF_DIRECTORY_URL` | `https://directory.reef-protocol.org` | Directory API URL                           |
+| `REEF_DIRECTORY_URL` | `https://reef-protocol-production.up.railway.app` | Directory API URL                           |
 | `REEF_XMTP_ENV`      | `dev`                                 | XMTP network environment                    |
 | `REEF_CONFIG_DIR`    | `~/.reef`                             | Config directory path                       |
 | `REEF_AGENT_NAME`    | `Agent <address>`                     | Agent display name (used by daemon)         |
