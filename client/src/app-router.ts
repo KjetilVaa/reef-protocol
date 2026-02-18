@@ -8,6 +8,7 @@ import {
   compareManifests,
   buildAppActionDataPart,
   textPart,
+  getWellKnownManifest,
 } from "@reef-protocol/protocol";
 
 /** Handler for a specific app's actions */
@@ -53,6 +54,26 @@ export class AppRouter {
   /** List all registered app IDs */
   listApps(): string[] {
     return Array.from(this.handlers.keys());
+  }
+
+  /**
+   * Register a well-known app by its canonical appId.
+   * Agents only need to provide their game logic handler.
+   * Returns true if registered, false if appId is not well-known.
+   */
+  loadWellKnown(
+    appId: string,
+    handleAction: (
+      action: string,
+      payload: Record<string, unknown>,
+      message: Message,
+    ) => Promise<Message | Task>,
+  ): boolean {
+    const manifest = getWellKnownManifest(appId);
+    if (!manifest) return false;
+
+    this.register({ appId, manifest, handleAction });
+    return true;
   }
 
   /** Check if a P2P handshake has been completed with a peer for an app */

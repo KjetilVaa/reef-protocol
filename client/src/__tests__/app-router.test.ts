@@ -6,6 +6,7 @@ import {
   buildAppAction,
   buildAppActionDataPart,
   textPart,
+  TTT_MANIFEST,
 } from "@reef-protocol/protocol";
 
 function createTestHandler(appId: string): AppHandler {
@@ -211,5 +212,62 @@ describe("AppRouter handshake", () => {
     const router = new AppRouter();
     const msg = router.buildHandshakeMessage("unknown");
     expect(msg).toBeNull();
+  });
+});
+
+describe("AppRouter.loadWellKnown", () => {
+  it("registers a well-known app with a custom handler", () => {
+    const router = new AppRouter();
+    const handleAction = vi.fn(
+      async (): Promise<Task> => ({
+        kind: "task",
+        id: "task-ttt",
+        contextId: "ctx-1",
+        status: { state: "completed", timestamp: new Date().toISOString() },
+      }),
+    );
+
+    const result = router.loadWellKnown("tic-tac-toe", handleAction);
+    expect(result).toBe(true);
+
+    const handler = router.get("tic-tac-toe");
+    expect(handler).toBeDefined();
+    expect(handler!.manifest).toBe(TTT_MANIFEST);
+    expect(handler!.appId).toBe("tic-tac-toe");
+  });
+
+  it("returns false for unknown app IDs", () => {
+    const router = new AppRouter();
+    const result = router.loadWellKnown("nonexistent", vi.fn());
+    expect(result).toBe(false);
+    expect(router.listApps()).toEqual([]);
+  });
+
+  it("enables handshake between two agents using the same canonical manifest", async () => {
+    const routerA = new AppRouter();
+    const routerB = new AppRouter();
+
+    routerA.loadWellKnown("tic-tac-toe", vi.fn());
+    routerB.loadWellKnown("tic-tac-toe", vi.fn());
+
+    // Agent A initiates handshake
+    const handshakeMsg = routerA.buildHandshakeMessage("tic-tac-toe");
+    expect(handshakeMsg).not.toBeNull();
+
+    // Agent B receives and accepts
+    const ackResult = await routerB.route(handshakeMsg!, "0xAgentA");
+    expect(ackResult).not.toBeNull();
+    const ackResponse = ackResult!.result as Message;
+    const ackData = ackResponse.parts[0] as {
+      kind: string;
+      data: Record<string, unknown>;
+    };
+    expect(ackData.data.action).toBe("_handshake-ack");
+    expect(routerB.isNegotiated("tic-tac-toe", "0xAgentA")).toBe(true);
+
+    // Agent A receives the ack
+    const ackProcessed = await routerA.route(ackResponse, "0xAgentB");
+    expect(ackProcessed).not.toBeNull();
+    expect(routerA.isNegotiated("tic-tac-toe", "0xAgentB")).toBe(true);
   });
 });

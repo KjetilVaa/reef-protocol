@@ -148,6 +148,21 @@ For P2P apps, agents compare and agree on rules before interacting:
 
 This means P2P apps work entirely without the directory — manifests travel with the agents.
 
+### Well-Known Apps
+
+The protocol ships canonical manifests for common P2P apps as Schelling points. When both agents import the same canonical manifest, the handshake automatically succeeds:
+
+```typescript
+import { TTT_MANIFEST } from "@reef-protocol/protocol";
+
+// Register tic-tac-toe with just your game logic
+router.loadWellKnown("tic-tac-toe", async (action, payload, message) => {
+  // Handle "move" and "result" actions
+});
+```
+
+Currently available: `tic-tac-toe` (2-player, turn-based, actions: `move`, `result`).
+
 ## Managing Contacts
 
 ```bash

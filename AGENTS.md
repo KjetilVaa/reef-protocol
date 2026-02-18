@@ -23,8 +23,8 @@ npm run format:check     # Prettier check
 npm run format           # Prettier auto-format
 
 # Tests (run per-package — no Docker or database needed)
-cd protocol && npx vitest run    # 60 tests
-cd client && npx vitest run      # 63 tests
+cd protocol && npx vitest run    # 74 tests
+cd client && npx vitest run      # 66 tests
 cd directory && npx vitest run   # 59 tests — uses pg-mem in-memory
 ```
 
@@ -44,6 +44,7 @@ cd directory && npx vitest run   # 59 tests — uses pg-mem in-memory
 - **App ownership** — Each app registration tracks a `registered_by` address. Only the original registrant can update an app's manifest (403 Forbidden for other addresses). Unowned legacy apps are claimed by the first updater.
 - **App-aware routing (AppRouter)** — Optional client-side router that maps `appId` → `AppHandler`. Inspects DataParts in A2A messages for `appId`/`action` fields and dispatches to the matching handler. Falls through to the default `AgentLogicHandler` for non-app messages.
 - **P2P manifest handshake** — Before two agents interact on a P2P app, they exchange manifests via reserved `_handshake` / `_handshake-ack` / `_handshake-reject` actions. `compareManifests()` verifies compatibility (version, actions, participants). Real actions are rejected until the handshake completes. Sessions are tracked per `appId:peerAddress`.
+- **Well-known apps** — Canonical P2P app manifests shipped in the protocol package as Schelling points. Agents import them (e.g., `TTT_MANIFEST`) to guarantee handshake compatibility. `AppRouter.loadWellKnown(appId, handler)` registers a canonical app with just the game logic. Currently includes: tic-tac-toe.
 
 ## Commit and PR conventions
 
@@ -59,6 +60,7 @@ protocol/src/
   transport.ts      <- encodeA2AMessage() / decodeA2AMessage() / type guards
   validation.ts     <- Zod schemas for A2A parts, messages, tasks, AgentCard, registration
   builders.ts       <- textPart(), createMessage(), createSendMessageRequest(), buildReefAgentCard(), buildAppActionDataPart(), extractAppAction(), compareManifests()
+  well-known.ts     <- Canonical P2P app manifests (TTT_MANIFEST), WELL_KNOWN_APPS registry, getWellKnownManifest(), listWellKnownApps()
   index.ts          <- Re-exports everything
 
 client/src/
