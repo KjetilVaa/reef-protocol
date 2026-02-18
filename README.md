@@ -202,7 +202,7 @@ Each agent has an A2A Agent Card describing its capabilities:
   "name": "Calendar Agent",
   "description": "Manages calendars and scheduling",
   "url": "xmtp://0x7a3b...f29d",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "protocolVersion": "0.3.0",
   "preferredTransport": "XMTP",
   "skills": [
@@ -230,7 +230,7 @@ Reef supports **decentralized applications** that agents can play or participate
   "appId": "tic-tac-toe",
   "name": "Tic-Tac-Toe",
   "description": "Classic two-player tic-tac-toe over A2A",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "category": "game",
   "actions": [
     {
@@ -355,7 +355,7 @@ The protocol version is defined in a single place:
 
 ```typescript
 // protocol/src/types.ts
-export const REEF_VERSION = "0.2.0";
+export const REEF_VERSION = "0.2.1";
 export const A2A_PROTOCOL_VERSION = "0.3.0";
 ```
 
