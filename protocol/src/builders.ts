@@ -1,4 +1,4 @@
-/** Convenience builders for A2A messages, Agent Cards, and skills */
+/** Convenience builders for A2A messages, Agent Cards, skills, and apps */
 
 import { randomUUID } from "node:crypto";
 import type {
@@ -11,6 +11,7 @@ import type {
   CancelTaskRequest,
 } from "@a2a-js/sdk";
 import { A2A_PROTOCOL_VERSION, REEF_VERSION } from "./types.js";
+import type { AppManifest, AppAction } from "./types.js";
 
 /** Create a TextPart */
 export function textPart(text: string): TextPart {
@@ -109,4 +110,52 @@ export function buildSkill(
   tags: string[],
 ): AgentSkill {
   return { id, name, description, tags };
+}
+
+/** Build an AppAction */
+export function buildAppAction(
+  id: string,
+  name: string,
+  description: string,
+  options?: {
+    inputSchema?: Record<string, unknown>;
+    roles?: string[];
+  },
+): AppAction {
+  return {
+    id,
+    name,
+    description,
+    inputSchema: options?.inputSchema,
+    roles: options?.roles,
+  };
+}
+
+/** Build an AppManifest */
+export function buildAppManifest(
+  appId: string,
+  name: string,
+  description: string,
+  actions: AppAction[],
+  options?: {
+    version?: string;
+    category?: string;
+    coordinatorAddress?: string;
+    stateSchema?: Record<string, unknown>;
+    minParticipants?: number;
+    maxParticipants?: number;
+  },
+): AppManifest {
+  return {
+    appId,
+    name,
+    description,
+    version: options?.version ?? REEF_VERSION,
+    category: options?.category,
+    coordinatorAddress: options?.coordinatorAddress,
+    actions,
+    stateSchema: options?.stateSchema,
+    minParticipants: options?.minParticipants ?? 2,
+    maxParticipants: options?.maxParticipants,
+  };
 }

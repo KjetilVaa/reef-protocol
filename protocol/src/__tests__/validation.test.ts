@@ -11,6 +11,10 @@ import {
   heartbeatPayloadSchema,
   contactSchema,
   validateRegistration,
+  appActionSchema,
+  appManifestSchema,
+  appRegisterPayloadSchema,
+  validateAppRegistration,
 } from "../index.js";
 
 describe("partSchema", () => {
@@ -291,5 +295,128 @@ describe("contactSchema", () => {
       trusted: true,
     });
     expect(result.trusted).toBe(true);
+  });
+});
+
+describe("appActionSchema", () => {
+  it("validates a valid action", () => {
+    const result = appActionSchema.parse({
+      id: "move",
+      name: "Make Move",
+      description: "Submit a chess move",
+    });
+    expect(result.id).toBe("move");
+  });
+
+  it("accepts optional inputSchema and roles", () => {
+    const result = appActionSchema.parse({
+      id: "submit",
+      name: "Submit",
+      description: "Submit content",
+      inputSchema: { type: "object" },
+      roles: ["contributor"],
+    });
+    expect(result.roles).toEqual(["contributor"]);
+  });
+});
+
+describe("appManifestSchema", () => {
+  it("validates a valid P2P manifest", () => {
+    const result = appManifestSchema.parse({
+      appId: "chess",
+      name: "P2P Chess",
+      description: "Play chess over A2A",
+      version: "0.1.0",
+      actions: [{ id: "move", name: "Move", description: "Make a move" }],
+      minParticipants: 2,
+      maxParticipants: 2,
+    });
+    expect(result.appId).toBe("chess");
+    expect(result.coordinatorAddress).toBeUndefined();
+  });
+
+  it("validates a coordinated manifest", () => {
+    const result = appManifestSchema.parse({
+      appId: "reef-news",
+      name: "Reef News",
+      description: "Decentralized news aggregator",
+      version: "0.1.0",
+      category: "social",
+      coordinatorAddress: "0xCoordinator",
+      actions: [
+        {
+          id: "submit",
+          name: "Submit Article",
+          description: "Submit a news article",
+        },
+        {
+          id: "get-feed",
+          name: "Get Feed",
+          description: "Get latest articles",
+        },
+      ],
+      minParticipants: 1,
+    });
+    expect(result.coordinatorAddress).toBe("0xCoordinator");
+    expect(result.category).toBe("social");
+  });
+
+  it("rejects uppercase appId", () => {
+    expect(() =>
+      appManifestSchema.parse({
+        appId: "Chess",
+        name: "Chess",
+        description: "test",
+        version: "0.1.0",
+        actions: [],
+        minParticipants: 2,
+      }),
+    ).toThrow();
+  });
+
+  it("rejects appId with spaces", () => {
+    expect(() =>
+      appManifestSchema.parse({
+        appId: "my app",
+        name: "My App",
+        description: "test",
+        version: "0.1.0",
+        actions: [],
+        minParticipants: 1,
+      }),
+    ).toThrow();
+  });
+
+  it("accepts appId with hyphens and numbers", () => {
+    const result = appManifestSchema.parse({
+      appId: "my-app-2",
+      name: "My App",
+      description: "test",
+      version: "0.1.0",
+      actions: [],
+      minParticipants: 1,
+    });
+    expect(result.appId).toBe("my-app-2");
+  });
+});
+
+describe("appRegisterPayloadSchema", () => {
+  it("validates a registration payload", () => {
+    const result = validateAppRegistration({
+      appId: "chess",
+      manifest: {
+        appId: "chess",
+        name: "Chess",
+        description: "Play chess",
+        version: "0.1.0",
+        actions: [{ id: "move", name: "Move", description: "Make a move" }],
+        minParticipants: 2,
+      },
+    });
+    expect(result.appId).toBe("chess");
+  });
+
+  it("rejects missing manifest", () => {
+    expect(() => appRegisterPayloadSchema.parse({ appId: "chess" })).toThrow();
   });
 });

@@ -23,9 +23,9 @@ npm run format:check     # Prettier check
 npm run format           # Prettier auto-format
 
 # Tests (run per-package — no Docker or database needed)
-cd protocol && npx vitest run    # 40 tests
+cd protocol && npx vitest run    # 49 tests
 cd client && npx vitest run      # 51 tests
-cd directory && npx vitest run   # 35 tests — uses pg-mem in-memory
+cd directory && npx vitest run   # 55 tests — uses pg-mem in-memory
 ```
 
 ## Key conventions
@@ -40,6 +40,7 @@ cd directory && npx vitest run   # 35 tests — uses pg-mem in-memory
 - **AgentLogicHandler interface** — Client handler dispatches A2A requests to an `AgentLogicHandler` which processes messages and returns Tasks. Default is an echo handler; replace with real logic.
 - **Reputation system** — Bayesian Beta scoring (0–1) computed from uptime reliability, profile completeness, task success rate, and activity level. Score is recomputed on each heartbeat. Task outcome counters are accumulated via heartbeat telemetry.
 - **Rooms (group conversations)** — Multi-agent group chats built on XMTP's native group support. The handler responds to the originating conversation (DM or group) via an optional `Conversation` parameter. Room metadata (creator, purpose) is stored in the group's `appData` field.
+- **Apps (decentralized applications)** — First-class directory citizens with their own table and reputation. Two models: *coordinated* (a coordinator agent runs on the network) and *P2P* (agents follow a shared protocol directly). Apps define an `AppManifest` with actions, participant limits, and optional coordinator address. Coordinated apps piggyback on their coordinator agent's heartbeat for availability tracking. P2P apps are always "available" and never swept.
 
 ## Commit and PR conventions
 
@@ -68,18 +69,18 @@ client/src/
   heartbeat.ts      <- Periodic directory heartbeat with getTelemetry callback
   daemon.ts         <- Long-running process: AgentCard registration, InMemoryTaskStore, A2A handler, task counters
   cli.ts            <- Commander CLI entry point
-  commands/         <- One file per subcommand (identity, send, search, register, status, reputation, contacts, rooms)
+  commands/         <- One file per subcommand (identity, send, search, register, status, reputation, contacts, rooms, apps)
 
 directory/src/
   app.ts            <- Express app setup
   db.ts             <- Sequelize init (accepts injected instance for tests)
   config.ts         <- Env config
-  sweep.ts          <- Marks stale agents offline
+  sweep.ts          <- Marks stale agents and coordinated apps offline
   reputation.ts     <- Bayesian reputation scoring (computeReputationScore, computeReputationComponents)
-  models/           <- Agent (with agent_card JSONB + reputation columns), Snapshot (with init functions)
-  routes/           <- agents.ts (register/search/heartbeat/reputation), stats.ts
+  models/           <- Agent, App (with reputation columns), Snapshot (with init functions)
+  routes/           <- agents.ts (register/search/heartbeat/reputation), apps.ts (register/search/info/reputation), stats.ts
   middleware/       <- Rate limiting
-  migrations/       <- Umzug migrations (00001–00004, including add-reputation-fields)
+  migrations/       <- Umzug migrations (00001–00005, including apps table)
 ```
 
 ## Gotchas
