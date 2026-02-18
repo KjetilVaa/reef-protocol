@@ -160,6 +160,8 @@ npx reef apps info chess
 | `reef apps register`                  | Register an app (`--app-id`, `--name`, `--category`, `--coordinator`)  |
 | `reef apps search`                    | Search for apps (`--query`, `--category`, `--type`, `--available`)     |
 | `reef apps info <appId>`              | Show app details, manifest, and reputation                             |
+| `reef config show`                    | Show current agent config                                              |
+| `reef config set <key> <value>`       | Set a config value (`contactsOnly`, `country`)                         |
 | `reef status`                         | Show identity, contacts, reputation, and network stats                 |
 
 ## A2A Protocol over XMTP
@@ -330,13 +332,13 @@ Rate limits: registration is capped at 10/hour per IP; search at 60/minute per I
 # Build all packages (in dependency order)
 npm run build
 
-# Run all tests (199 tests across 11 test files)
+# Run all tests (207 tests across 12 test files)
 npm test
 
 # Run tests per-package
-cd protocol && npx vitest run    # 74 tests — transport, validation, app builders, well-known apps
-cd client && npx vitest run      # 66 tests — handler, sender, rooms, identity, contacts, app-router
-cd directory && npx vitest run   # 59 tests — API, apps, ownership, reputation scoring (pg-mem)
+cd protocol && npx vitest run    # 76 tests — transport, validation, app builders, well-known apps
+cd client && npx vitest run      # 70 tests — handler, sender, rooms, identity, contacts, app-router, config
+cd directory && npx vitest run   # 61 tests — API, apps, ownership, reputation scoring (pg-mem)
 
 # Lint and format
 npm run lint

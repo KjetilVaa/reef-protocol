@@ -131,6 +131,7 @@ agentsRouter.get("/search", searchLimiter, async (req, res, next) => {
         registeredAt: a.created_at?.toISOString(),
         lastHeartbeat: a.last_heartbeat?.toISOString(),
         reputationScore: a.reputation_score,
+        country: a.country ?? null,
       })),
     });
   } catch (err) {
@@ -168,6 +169,11 @@ agentsRouter.post("/heartbeat", async (req, res, next) => {
       total_interactions:
         agent.total_interactions + completedDelta + failedDelta,
     };
+
+    // Update country if provided
+    if (telemetry?.country) {
+      updatedFields.country = telemetry.country;
+    }
 
     // Compute reputation with the new values
     const inputForScore = toReputationInput({
@@ -286,6 +292,7 @@ agentsRouter.get("/:address", async (req, res, next) => {
       tasksCompleted: agent.tasks_completed,
       tasksFailed: agent.tasks_failed,
       totalInteractions: agent.total_interactions,
+      country: agent.country ?? null,
     });
   } catch (err) {
     next(err);
