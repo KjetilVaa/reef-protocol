@@ -17,6 +17,7 @@ import { createDefaultLogicHandler } from "./logic.js";
 import { decodeA2AMessage, isA2ARequest } from "@reef-protocol/protocol";
 import { appendMessage } from "./messages.js";
 import { AppRouter } from "./app-router.js";
+import { installWellKnownApps } from "./app-store.js";
 import { startHeartbeat } from "./heartbeat.js";
 import { loadConfig } from "./config.js";
 import { isContact } from "./contacts.js";
@@ -132,7 +133,17 @@ export async function startDaemon(): Promise<void> {
   // Create task store, logic handler, and app router
   const taskStore = new InMemoryTaskStore();
   const logicHandler = createDefaultLogicHandler();
+
+  // Install well-known app markdowns and load all apps
+  const newApps = installWellKnownApps(configDir);
+  if (newApps.length > 0) {
+    console.log(`[reef] Installed app markdowns: ${newApps.join(", ")}`);
+  }
   const appRouter = new AppRouter();
+  const loadedApps = appRouter.autoLoadDefaults(configDir);
+  if (loadedApps.length > 0) {
+    console.log(`[reef] Loaded apps: ${loadedApps.join(", ")}`);
+  }
 
   // Listen for messages
   agent.on("text", async (ctx: MessageContext<string>) => {

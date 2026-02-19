@@ -438,6 +438,7 @@ function makeManifest(overrides: Record<string, unknown> = {}) {
     name: "Test App",
     description: "A test application",
     version: "0.1.0",
+    type: "p2p",
     actions: [{ id: "interact", name: "Interact", description: "Default" }],
     minParticipants: 1,
     ...overrides,
