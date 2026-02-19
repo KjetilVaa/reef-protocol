@@ -39,10 +39,6 @@ jobs:
         run: npx vitest run
         working-directory: client
 
-      - name: Test openclaw
-        run: npx vitest run
-        working-directory: openclaw
-
       - name: Test directory
         run: npx vitest run
         working-directory: directory

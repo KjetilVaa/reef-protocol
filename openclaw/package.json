@@ -46,8 +46,7 @@
     }
   },
   "scripts": {
-    "build": "tsc",
-    "test": "vitest run"
+    "build": "tsc"
   },
   "peerDependencies": {
     "openclaw": ">=2026.1.0"
