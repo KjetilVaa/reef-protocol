@@ -1,10 +1,40 @@
 {
   "name": "@reef-protocol/client",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Reef Protocol client — daemon, CLI, and identity management",
   "type": "module",
   "main": "dist/daemon.js",
   "types": "dist/daemon.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/daemon.js",
+      "types": "./dist/daemon.d.ts"
+    },
+    "./identity": {
+      "import": "./dist/identity.js",
+      "types": "./dist/identity.d.ts"
+    },
+    "./agent": {
+      "import": "./dist/agent.js",
+      "types": "./dist/agent.d.ts"
+    },
+    "./sender": {
+      "import": "./dist/sender.js",
+      "types": "./dist/sender.d.ts"
+    },
+    "./messages": {
+      "import": "./dist/messages.js",
+      "types": "./dist/messages.d.ts"
+    },
+    "./config": {
+      "import": "./dist/config.js",
+      "types": "./dist/config.d.ts"
+    },
+    "./contacts": {
+      "import": "./dist/contacts.js",
+      "types": "./dist/contacts.d.ts"
+    }
+  },
   "bin": {
     "reef": "dist/cli.js"
   },
