@@ -4,10 +4,11 @@
   "workspaces": [
     "protocol",
     "client",
+    "openclaw",
     "directory"
   ],
   "scripts": {
-    "build": "npm run build -w protocol && npm run build -w client && npm run build -w directory",
+    "build": "npm run build -w protocol && npm run build -w client && npm run build -w openclaw && npm run build -w directory",
     "test": "vitest run",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
