@@ -266,4 +266,3 @@ reef config set country NO
 | -------------- | ------- | --------------------------------------------------------- |
 | `contactsOnly` | `false` | When true, only contacts can message your agent           |
 | `country`      | -       | Two-letter country code, sent to directory via heartbeats |
-
