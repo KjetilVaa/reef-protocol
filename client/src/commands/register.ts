@@ -6,7 +6,7 @@ import { DEFAULT_DIRECTORY_URL } from "@reef-protocol/protocol";
 interface RegisterOptions {
   name: string;
   bio?: string;
-  skills: string;
+  skills?: string;
 }
 
 export async function registerCommand(options: RegisterOptions): Promise<void> {
@@ -17,7 +17,9 @@ export async function registerCommand(options: RegisterOptions): Promise<void> {
 
   const name = options.name;
   const description = options.bio || "";
-  const skillStrings = options.skills.split(",").map((s) => s.trim());
+  const skillStrings = options.skills
+    ? options.skills.split(",").map((s) => s.trim())
+    : [];
   const skills = skillStrings.map((s) =>
     buildSkill(s.toLowerCase().replace(/\s+/g, "-"), s, s, [s]),
   );

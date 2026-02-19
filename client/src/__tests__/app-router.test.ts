@@ -1,273 +1,163 @@
-import { describe, it, expect, vi } from "vitest";
-import { AppRouter, type AppHandler } from "../app-router.js";
-import type { Message, Task } from "@a2a-js/sdk";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import { AppRouter } from "../app-router.js";
+import type { Message } from "@a2a-js/sdk";
 import {
   buildAppManifest,
   buildAppAction,
   buildAppActionDataPart,
   textPart,
-  TTT_MANIFEST,
 } from "@reef-protocol/protocol";
+import { installWellKnownApps } from "../app-store.js";
 
-function createTestHandler(appId: string): AppHandler {
-  const manifest = buildAppManifest(appId, "Test App", "A test app", [
-    buildAppAction("test-action", "Test", "A test action"),
-  ]);
-
-  return {
-    appId,
-    manifest,
-    handleAction: vi.fn(
-      async (_action, _payload, _message): Promise<Task> => ({
-        kind: "task",
-        id: `task-${appId}`,
-        contextId: "ctx-1",
-        status: { state: "completed", timestamp: new Date().toISOString() },
-      }),
-    ),
-  };
-}
+const testManifest = buildAppManifest("chess", "Chess", "A chess game", [
+  buildAppAction("move", "Move", "Make a move"),
+]);
 
 function makeMessage(parts: Message["parts"]): Message {
   return { kind: "message", messageId: "msg-1", role: "user", parts };
 }
 
 describe("AppRouter", () => {
-  it("registers and retrieves a handler", () => {
+  it("registers and retrieves an app manifest", () => {
     const router = new AppRouter();
-    const handler = createTestHandler("chess");
-    router.register(handler);
-    expect(router.get("chess")).toBe(handler);
+    router.register("chess", testManifest);
+    expect(router.get("chess")).toBe(testManifest);
     expect(router.listApps()).toEqual(["chess"]);
   });
 
-  it("unregisters a handler", () => {
+  it("unregisters an app", () => {
     const router = new AppRouter();
-    router.register(createTestHandler("chess"));
+    router.register("chess", testManifest);
     expect(router.unregister("chess")).toBe(true);
     expect(router.get("chess")).toBeUndefined();
     expect(router.unregister("chess")).toBe(false);
   });
 
-  it("returns null for text-only messages", async () => {
+  it("returns null for text-only messages", () => {
     const router = new AppRouter();
-    router.register(createTestHandler("chess"));
-    const result = await router.route(
-      makeMessage([textPart("Hello")]),
-      "0xPeer",
-    );
+    router.register("chess", testManifest);
+    const result = router.route(makeMessage([textPart("Hello")]), "0xPeer");
     expect(result).toBeNull();
   });
 
-  it("returns null for unregistered app IDs", async () => {
+  it("returns null for DataParts without appId", () => {
     const router = new AppRouter();
-    router.register(createTestHandler("chess"));
-    const msg = makeMessage([buildAppActionDataPart("unknown-app", "foo")]);
-    const result = await router.route(msg, "0xPeer");
-    expect(result).toBeNull();
-  });
-
-  it("returns null for DataParts without appId", async () => {
-    const router = new AppRouter();
-    router.register(createTestHandler("chess"));
+    router.register("chess", testManifest);
     const msg = makeMessage([{ kind: "data", data: { someKey: "value" } }]);
-    const result = await router.route(msg, "0xPeer");
+    const result = router.route(msg, "0xPeer");
     expect(result).toBeNull();
   });
 });
 
-describe("AppRouter handshake", () => {
-  it("accepts handshake with compatible manifest", async () => {
+describe("AppRouter.route", () => {
+  it("logs and acknowledges known app actions", () => {
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const router = new AppRouter();
-    const handler = createTestHandler("chess");
-    router.register(handler);
-
-    const peerManifest = { ...handler.manifest };
-    const msg = makeMessage([
-      buildAppActionDataPart("chess", "_handshake", {
-        manifest: peerManifest as unknown as Record<string, unknown>,
-      }),
-    ]);
-
-    const result = await router.route(msg, "0xPeer");
-    expect(result).not.toBeNull();
-    expect(result!.appAction.action).toBe("_handshake");
-
-    // Should respond with _handshake-ack
-    const response = result!.result as Message;
-    expect(response.kind).toBe("message");
-    const dataPart = response.parts[0] as {
-      kind: string;
-      data: Record<string, unknown>;
-    };
-    expect(dataPart.data.action).toBe("_handshake-ack");
-
-    // Session should be established
-    expect(router.isNegotiated("chess", "0xPeer")).toBe(true);
-  });
-
-  it("rejects handshake with incompatible manifest", async () => {
-    const router = new AppRouter();
-    const handler = createTestHandler("chess");
-    router.register(handler);
-
-    const peerManifest = { ...handler.manifest, version: "99.0.0" };
-    const msg = makeMessage([
-      buildAppActionDataPart("chess", "_handshake", {
-        manifest: peerManifest as unknown as Record<string, unknown>,
-      }),
-    ]);
-
-    const result = await router.route(msg, "0xBadPeer");
-    expect(result).not.toBeNull();
-
-    const response = result!.result as Message;
-    const dataPart = response.parts[0] as {
-      kind: string;
-      data: Record<string, unknown>;
-    };
-    expect(dataPart.data.action).toBe("_handshake-reject");
-    expect(router.isNegotiated("chess", "0xBadPeer")).toBe(false);
-  });
-
-  it("rejects handshake for unsupported app", async () => {
-    const router = new AppRouter();
-    // No handler registered
-
-    const msg = makeMessage([
-      buildAppActionDataPart("chess", "_handshake", {
-        manifest: {} as Record<string, unknown>,
-      }),
-    ]);
-
-    const result = await router.route(msg, "0xPeer");
-    expect(result).not.toBeNull();
-    const response = result!.result as Message;
-    const dataPart = response.parts[0] as {
-      kind: string;
-      data: Record<string, unknown>;
-    };
-    expect(dataPart.data.action).toBe("_handshake-reject");
-  });
-
-  it("rejects real actions before handshake", async () => {
-    const router = new AppRouter();
-    router.register(createTestHandler("chess"));
+    router.register("chess", testManifest);
 
     const msg = makeMessage([
       buildAppActionDataPart("chess", "move", { from: "e2", to: "e4" }),
     ]);
-
-    const result = await router.route(msg, "0xNoHandshake");
-    expect(result).not.toBeNull();
-    const task = result!.result as Task;
-    expect(task.status.state).toBe("failed");
-  });
-
-  it("allows real actions after handshake", async () => {
-    const router = new AppRouter();
-    const handler = createTestHandler("chess");
-    router.register(handler);
-
-    // Complete handshake first
-    const handshakeMsg = makeMessage([
-      buildAppActionDataPart("chess", "_handshake", {
-        manifest: handler.manifest as unknown as Record<string, unknown>,
-      }),
-    ]);
-    await router.route(handshakeMsg, "0xAgreedPeer");
-
-    // Now send a real action
-    const actionMsg = makeMessage([
-      buildAppActionDataPart("chess", "move", { from: "e2", to: "e4" }),
-    ]);
-    const result = await router.route(actionMsg, "0xAgreedPeer");
+    const result = router.route(msg, "0xPeer");
 
     expect(result).not.toBeNull();
+    const task = result!.result;
+    expect(task.kind).toBe("task");
+    expect(task.status.state).toBe("working");
+    expect(result!.appAction.appId).toBe("chess");
     expect(result!.appAction.action).toBe("move");
-    expect(handler.handleAction).toHaveBeenCalledWith(
-      "move",
-      { from: "e2", to: "e4" },
-      actionMsg,
+    expect(result!.appAction.payload).toEqual({ from: "e2", to: "e4" });
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[reef:app:chess] from 0xPeer: move"),
     );
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.not.stringContaining("(unknown app)"),
+    );
+
+    consoleSpy.mockRestore();
   });
 
-  it("builds a handshake message", () => {
+  it("logs unknown app actions with hint", () => {
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const router = new AppRouter();
-    const handler = createTestHandler("chess");
-    router.register(handler);
+    // No app registered — "poker" is unknown
 
-    const msg = router.buildHandshakeMessage("chess");
-    expect(msg).not.toBeNull();
-    expect(msg!.parts).toHaveLength(1);
-    const dataPart = msg!.parts[0] as {
-      kind: string;
-      data: Record<string, unknown>;
-    };
-    expect(dataPart.data.appId).toBe("chess");
-    expect(dataPart.data.action).toBe("_handshake");
+    const msg = makeMessage([
+      buildAppActionDataPart("poker", "bet", { amount: 100 }),
+    ]);
+    const result = router.route(msg, "0xPeer");
+
+    expect(result).not.toBeNull();
+    expect(result!.result.status.state).toBe("working");
+    expect(result!.appAction.appId).toBe("poker");
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "[reef:app:poker] (unknown app) from 0xPeer: bet",
+      ),
+    );
+
+    consoleSpy.mockRestore();
   });
 
-  it("returns null for handshake of unregistered app", () => {
+  it("returns null for non-app DataParts", () => {
     const router = new AppRouter();
-    const msg = router.buildHandshakeMessage("unknown");
-    expect(msg).toBeNull();
+    const msg = makeMessage([
+      { kind: "data", data: { type: "file", content: "hello" } },
+    ]);
+    const result = router.route(msg, "0xPeer");
+    expect(result).toBeNull();
   });
 });
 
-describe("AppRouter.loadWellKnown", () => {
-  it("registers a well-known app with a custom handler", () => {
+describe("AppRouter.autoLoadDefaults", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "reef-router-test-"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("returns empty list when no apps are installed", () => {
     const router = new AppRouter();
-    const handleAction = vi.fn(
-      async (): Promise<Task> => ({
-        kind: "task",
-        id: "task-ttt",
-        contextId: "ctx-1",
-        status: { state: "completed", timestamp: new Date().toISOString() },
-      }),
+    const loaded = router.autoLoadDefaults(tmpDir);
+    expect(loaded).toEqual([]);
+  });
+
+  it("loads apps from markdown files", () => {
+    installWellKnownApps(tmpDir);
+    const router = new AppRouter();
+    const loaded = router.autoLoadDefaults(tmpDir);
+
+    expect(loaded).toContain("tic-tac-toe");
+    expect(router.get("tic-tac-toe")).toBeDefined();
+    expect(router.get("tic-tac-toe")!.appId).toBe("tic-tac-toe");
+  });
+
+  it("auto-loaded apps are routed with logging", () => {
+    installWellKnownApps(tmpDir);
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const router = new AppRouter();
+    router.autoLoadDefaults(tmpDir);
+
+    const msg = makeMessage([
+      buildAppActionDataPart("tic-tac-toe", "move", { position: 4 }),
+    ]);
+    const result = router.route(msg, "0xPeer");
+
+    expect(result).not.toBeNull();
+    expect(result!.result.status.state).toBe("working");
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[reef:app:tic-tac-toe] from 0xPeer: move"),
     );
 
-    const result = router.loadWellKnown("tic-tac-toe", handleAction);
-    expect(result).toBe(true);
-
-    const handler = router.get("tic-tac-toe");
-    expect(handler).toBeDefined();
-    expect(handler!.manifest).toBe(TTT_MANIFEST);
-    expect(handler!.appId).toBe("tic-tac-toe");
-  });
-
-  it("returns false for unknown app IDs", () => {
-    const router = new AppRouter();
-    const result = router.loadWellKnown("nonexistent", vi.fn());
-    expect(result).toBe(false);
-    expect(router.listApps()).toEqual([]);
-  });
-
-  it("enables handshake between two agents using the same canonical manifest", async () => {
-    const routerA = new AppRouter();
-    const routerB = new AppRouter();
-
-    routerA.loadWellKnown("tic-tac-toe", vi.fn());
-    routerB.loadWellKnown("tic-tac-toe", vi.fn());
-
-    // Agent A initiates handshake
-    const handshakeMsg = routerA.buildHandshakeMessage("tic-tac-toe");
-    expect(handshakeMsg).not.toBeNull();
-
-    // Agent B receives and accepts
-    const ackResult = await routerB.route(handshakeMsg!, "0xAgentA");
-    expect(ackResult).not.toBeNull();
-    const ackResponse = ackResult!.result as Message;
-    const ackData = ackResponse.parts[0] as {
-      kind: string;
-      data: Record<string, unknown>;
-    };
-    expect(ackData.data.action).toBe("_handshake-ack");
-    expect(routerB.isNegotiated("tic-tac-toe", "0xAgentA")).toBe(true);
-
-    // Agent A receives the ack
-    const ackProcessed = await routerA.route(ackResponse, "0xAgentB");
-    expect(ackProcessed).not.toBeNull();
-    expect(routerA.isNegotiated("tic-tac-toe", "0xAgentB")).toBe(true);
+    consoleSpy.mockRestore();
   });
 });
