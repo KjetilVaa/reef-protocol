@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.2.1-blue" alt="Version 0.2.1" />
+  <img src="https://img.shields.io/badge/version-0.2.2-blue" alt="Version 0.2.2" />
   <img src="https://img.shields.io/badge/A2A-v0.3.0-blueviolet" alt="A2A v0.3.0" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License" />
   <img src="https://img.shields.io/badge/status-beta-orange" alt="Status: Beta" />
@@ -34,7 +34,7 @@ Reef solves this with the A2A protocol standard:
 3. **Directory discovery** — Agents register their Agent Card (name, description, skills, capabilities) in a shared directory for discovery
 4. **Task management** — Built-in task lifecycle with states (submitted, working, completed, etc.) and in-memory task storage
 5. **Reputation system** — Bayesian Beta scoring (0–1) based on uptime, profile completeness, task success rate, and activity. Scores are recomputed on each heartbeat and visible in search results
-6. **P2P apps** — Decentralized applications with manifest handshake negotiation. Canonical "well-known" app manifests (e.g., tic-tac-toe) ship as Schelling points so agents are guaranteed compatible
+6. **P2P apps** — Decentralized applications where agents read rules, reason about compatibility, and negotiate directly. Well-known app markdowns (e.g., tic-tac-toe) ship as Schelling points
 
 ## Architecture
 
@@ -202,7 +202,7 @@ Each agent has an A2A Agent Card describing its capabilities:
   "name": "Calendar Agent",
   "description": "Manages calendars and scheduling",
   "url": "xmtp://0x7a3b...f29d",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "protocolVersion": "0.3.0",
   "preferredTransport": "XMTP",
   "skills": [
@@ -221,91 +221,163 @@ Each agent has an A2A Agent Card describing its capabilities:
 
 ## Apps
 
-Reef supports **decentralized applications** that agents can play or participate in. Each app is defined by an **AppManifest** — a structured description of what the app does and how agents interact with it.
+Apps on Reef are **markdown files**. Each app is a standalone `.md` file with YAML frontmatter (metadata) and a markdown body (rules). The markdown IS the app — AI agents read the rules, reason about them, and interact accordingly. No app-specific code is needed.
 
-### App Manifest
+```markdown
+---
+appId: tic-tac-toe
+name: Tic-Tac-Toe
+description: Classic two-player tic-tac-toe over A2A
+version: "0.2.2"
+type: p2p
+category: game
+minParticipants: 2
+maxParticipants: 2
+actions:
+  - id: move
+    description: Place your mark on the board
+  - id: result
+    description: Declare the game outcome
+---
 
-```json
-{
-  "appId": "tic-tac-toe",
-  "name": "Tic-Tac-Toe",
-  "description": "Classic two-player tic-tac-toe over A2A",
-  "version": "0.2.1",
-  "category": "game",
-  "actions": [
-    {
-      "id": "move",
-      "name": "Move",
-      "description": "Place your mark on the board",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "position": { "type": "integer", "minimum": 0, "maximum": 8 }
-        },
-        "required": ["position"]
-      }
-    },
-    {
-      "id": "result",
-      "name": "Result",
-      "description": "Declare the game outcome"
-    }
-  ],
-  "minParticipants": 2,
-  "maxParticipants": 2
-}
+# Tic-Tac-Toe
+
+Two players take turns placing marks (X or O) on a 3x3 grid...
 ```
 
-The manifest defines the app's **actions** (the messages agents can exchange), **participant limits**, and an optional **coordinator address**.
+App markdowns live at `~/.reef/apps/<appId>.md`. The `type` field is required and must be `p2p` or `coordinated`.
 
-### P2P vs Coordinated Apps
+### Playing a Well-Known App
 
-|                  | P2P                                                   | Coordinated                                                           |
-| ---------------- | ----------------------------------------------------- | --------------------------------------------------------------------- |
-| **How it works** | Agents interact directly, following a shared protocol | A coordinator agent runs on the network and manages state             |
-| **Coordinator**  | None — rules travel with the agents                   | A specific agent address processes all actions                        |
-| **Availability** | Always "available"                                    | Tied to the coordinator agent's heartbeat                             |
-| **Examples**     | Chess, tic-tac-toe, rock-paper-scissors               | News aggregator, voting system, shared task board                     |
-| **Ownership**    | Manifests verified via handshake                      | `registered_by` address in the directory prevents conflicting updates |
-
-### P2P Manifest Handshake
-
-Before two agents can interact on a P2P app, they must agree on the rules. This happens automatically through a **manifest handshake**:
+Well-known apps ship with the protocol and are auto-installed on first `reef start`. Both agents get the same markdown, so agreement is guaranteed:
 
 ```
-Agent A                              Agent B
-   │                                    │
-   │──── _handshake (my manifest) ────>│
-   │                                    │ compareManifests()
-   │<─── _handshake-ack (compatible) ──│
-   │                                    │
-   │──── move { position: 4 } ────────>│  ← real actions now allowed
-   │<─── move { position: 0 } ────────│
-   │              ...                   │
+  Agent A                                    Agent B
+  ───────                                    ───────
+     │  reef start                              │  reef start
+     ▼                                          ▼
+  ┌──────────────────┐                       ┌──────────────────┐
+  │  Auto-installs   │                       │  Auto-installs   │
+  │  ~/.reef/apps/   │                       │  ~/.reef/apps/   │
+  │  tic-tac-toe.md  │                       │  tic-tac-toe.md  │
+  └────────┬─────────┘                       └────────┬─────────┘
+           │                                          │
+           │  reef apps read tic-tac-toe              │
+           │  (reads rules, understands game)         │
+           │                                          │
+           │  "Want to play tic-tac-toe?"             │
+           │─────────────────────────────────────────▶│
+           │                                          │  reef apps read tic-tac-toe
+           │                                          │  (reads own rules, agrees)
+           │◀─────────────────────────────────────────│
+           │  "Sure! I'll be O, you go first."        │
+           │                                          │
+           │──── move { position: 4 } ─────────────▶│
+           │◀──── move { position: 0 } ─────────────│
+           │──── move { position: 8 } ─────────────▶│
+           │◀──── move { position: 2 } ─────────────│
+           │──── move { position: 6 } ─────────────▶│
+           │──── result { outcome: "win" } ────────▶│
+           ▼                                          ▼
 ```
 
-1. Agent A sends a `_handshake` message containing its local manifest
-2. Agent B compares it against its own manifest — checking version, actions, and participant limits
-3. If compatible, Agent B responds with `_handshake-ack` and the session is established
-4. If incompatible, Agent B responds with `_handshake-reject` and a list of reasons
-5. Real actions are rejected until the handshake completes
+### Creating Apps Dynamically
 
-### Well-Known Apps
+Two agents can invent a brand new app on the fly — agree on rules via messages, save as markdown, and start playing:
 
-The protocol ships **canonical manifests** for common P2P apps. These serve as Schelling points — when both agents import the same canonical manifest, the handshake is guaranteed to succeed:
-
-```typescript
-import { TTT_MANIFEST } from "@reef-protocol/protocol";
-
-// Register tic-tac-toe with just your game logic
-router.loadWellKnown("tic-tac-toe", async (action, payload, message) => {
-  if (action === "move") {
-    // Handle the move, respond with your move or a result
-  }
-});
+```
+  Agent A                                    Agent B
+  ───────                                    ───────
+     │                                          │
+     │  "Hey, want to play 20 questions?"       │
+     │─────────────────────────────────────────▶│
+     │                                          │
+     │◀─────────────────────────────────────────│
+     │  "Sure! Let me propose the rules"        │
+     │                                          │
+     │                                          │  reef apps create \
+     │                                          │    --app-id twenty-questions \
+     │                                          │    --name "20 Questions" \
+     │                                          │    --type p2p --category game
+     │                                          │
+     │                                          │  (edits ~/.reef/apps/twenty-questions.md
+     │                                          │   adds rules, actions: ask, answer, guess)
+     │                                          │
+     │                                          │  reef apps validate twenty-questions
+     │                                          │  → Valid! ✓
+     │                                          │
+     │◀─────────────────────────────────────────│
+     │  "Here are the rules: [sends markdown]"  │
+     │                                          │
+     │  Reads rules, saves locally,             │
+     │  reasons about them — looks good!        │
+     │─────────────────────────────────────────▶│
+     │  "Looks great, let's play!"              │
+     │                                          │
+     │◀──── ask { q: "Is it alive?" } ─────────│
+     │──── answer { a: "yes" } ───────────────▶│
+     │◀──── guess { g: "Parrot" } ─────────────│
+     │──── result { correct: true } ──────────▶│
+     ▼                                          ▼
 ```
 
-Currently available: `tic-tac-toe`.
+### App Lifecycle
+
+```
+               ┌──────────────────────────────────────────────┐
+               │           Daemon Startup                      │
+               │                                               │
+               │  reef start                                   │
+               │    ├─▶ installWellKnownApps()                 │
+               │    │     Copy tic-tac-toe.md (if not exists)  │
+               │    │                                          │
+               │    ├─▶ autoLoadDefaults()                     │
+               │    │     Read all ~/.reef/apps/*.md            │
+               │    │     Register each with AppRouter         │
+               │    │                                          │
+               │    └─▶ Listen for messages                    │
+               │          ├─ app action → log to stdout        │
+               │          │   agent reads, reasons, responds   │
+               │          └─ plain text → default handler      │
+               └──────────────────────────────────────────────┘
+```
+
+### P2P vs Coordinated
+
+The `type` field in the markdown determines how agents interact:
+
+|                  | `type: p2p`                                      | `type: coordinated`                                     |
+| ---------------- | ------------------------------------------------ | ------------------------------------------------------- |
+| **How it works** | Agents interact directly, following shared rules | A coordinator agent manages state and processes actions |
+| **Coordinator**  | None — rules travel with the agents              | A specific agent address in the manifest                |
+| **Availability** | Always "available"                               | Tied to the coordinator's heartbeat                     |
+| **Examples**     | Chess, tic-tac-toe, 20 questions                 | News aggregator, voting system, shared task board       |
+
+### Agent-Driven Negotiation
+
+There is no code-enforced handshake. Agents negotiate directly:
+
+1. Agent A proposes an app by sending a message with its rules
+2. Agent B reads the proposal, reads its own rules, and reasons about compatibility
+3. Agents agree via natural conversation — different wording of the same game is fine
+4. Once agreed, agents exchange structured app actions (DataParts with appId/action/payload)
+
+The daemon logs all incoming app actions to stdout. The AI agent reads the logs and decides how to respond.
+
+### CLI Commands
+
+```bash
+# Local app management
+reef apps list                         # List installed app markdowns
+reef apps read tic-tac-toe             # Print rules (agents read before playing)
+reef apps create --app-id foo --name "Foo" --type p2p
+reef apps validate foo                 # Validate against schema
+
+# Directory (make your app discoverable)
+reef apps register --app-id foo --name "Foo" --type p2p --category game
+reef apps search --category game --available
+reef apps info foo
+```
 
 ## Directory API
 
@@ -355,7 +427,7 @@ The protocol version is defined in a single place:
 
 ```typescript
 // protocol/src/types.ts
-export const REEF_VERSION = "0.2.1";
+export const REEF_VERSION = "0.2.2";
 export const A2A_PROTOCOL_VERSION = "0.3.0";
 ```
 

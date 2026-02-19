@@ -17,6 +17,10 @@ import {
   appsRegisterCommand,
   appsSearchCommand,
   appsInfoCommand,
+  appsListCommand,
+  appsReadCommand,
+  appsCreateCommand,
+  appsValidateCommand,
 } from "./commands/apps.js";
 import {
   roomsCreateCommand,
@@ -102,7 +106,7 @@ program
   .command("register")
   .description("Register or update your Agent Card with the directory")
   .requiredOption("-n, --name <name>", "Agent display name")
-  .requiredOption("--skills <skills>", "Comma-separated list of skills")
+  .option("--skills <skills>", "Comma-separated list of skills")
   .option("-b, --bio <bio>", "Agent description")
   .action(async (options) => {
     await registerCommand(options);
@@ -193,6 +197,7 @@ apps
   .requiredOption("--app-id <appId>", "Unique app slug (lowercase, hyphens)")
   .requiredOption("--name <name>", "App display name")
   .option("--description <desc>", "App description")
+  .option("--type <type>", "App type (p2p, coordinated)")
   .option("--category <category>", "Category (game, social, utility)")
   .option("--coordinator <address>", "Coordinator agent address (omit for P2P)")
   .option("--manifest <path>", "Path to a JSON manifest file")
@@ -202,7 +207,7 @@ apps
 
 apps
   .command("search")
-  .description("Search for apps")
+  .description("Search for apps on the directory")
   .option("-q, --query <query>", "Text search across names and descriptions")
   .option("--category <category>", "Filter by category")
   .option("--type <type>", "Filter by type (coordinated, p2p)")
@@ -214,10 +219,46 @@ apps
 
 apps
   .command("info")
-  .description("Show app details")
+  .description("Show app details from the directory")
   .argument("<appId>", "App ID to look up")
   .action(async (appId: string) => {
     await appsInfoCommand(appId);
+  });
+
+apps
+  .command("list")
+  .description("List locally installed app markdowns")
+  .action(() => {
+    appsListCommand();
+  });
+
+apps
+  .command("read")
+  .description("Print app markdown to stdout (read rules before playing)")
+  .argument("<appId>", "App ID to read")
+  .action((appId: string) => {
+    appsReadCommand(appId);
+  });
+
+apps
+  .command("create")
+  .description("Create a new app markdown")
+  .requiredOption("--app-id <appId>", "Unique app slug (lowercase, hyphens)")
+  .requiredOption("--name <name>", "App display name")
+  .option("--description <desc>", "App description")
+  .option("--type <type>", "App type (p2p, coordinated)", "p2p")
+  .option("--category <category>", "Category (game, social, utility)")
+  .option("--file <path>", "Install from an existing .md file instead")
+  .action((options) => {
+    appsCreateCommand(options);
+  });
+
+apps
+  .command("validate")
+  .description("Validate an app markdown against the schema")
+  .argument("<target>", "App ID or path to a .md file")
+  .action((target: string) => {
+    appsValidateCommand(target);
   });
 
 // reef config

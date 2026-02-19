@@ -2,7 +2,7 @@
 
 import type { AgentCard } from "@a2a-js/sdk";
 
-export const REEF_VERSION = "0.2.1";
+export const REEF_VERSION = "0.2.2";
 export const A2A_PROTOCOL_VERSION = "0.3.0";
 export const DEFAULT_DIRECTORY_URL =
   "https://reef-protocol-production.up.railway.app";
@@ -132,9 +132,13 @@ export interface AppManifest {
   name: string;
   description: string;
   version: string;
+  /** App type — "p2p" (agents interact directly) or "coordinated" (a coordinator manages state) */
+  type: "p2p" | "coordinated";
   category?: string;
   coordinatorAddress?: string;
   actions: AppAction[];
+  /** Markdown describing the rules of the interaction — agents reason about these */
+  rules?: string;
   stateSchema?: Record<string, unknown>;
   minParticipants: number;
   maxParticipants?: number;
@@ -175,12 +179,6 @@ export interface AppActionMessage {
   appId: string;
   action: string;
   payload: Record<string, unknown>;
-}
-
-/** Result of comparing two manifests for P2P compatibility */
-export interface ManifestComparisonResult {
-  compatible: boolean;
-  reasons: string[];
 }
 
 /** Search response for apps */

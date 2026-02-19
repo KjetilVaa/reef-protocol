@@ -16,4 +16,8 @@ Read `AGENTS.md` first — it covers architecture, commands, conventions, and fi
 - The `agent_card` column in the `agents` table is JSONB (nullable for migration compat).
 - XMTP addresses require `0x${string}` type — use `as \`0x${string}\`` casts. Messages are sent via `dm.sendText()`, not `dm.send()`.
 - `InMemoryTaskStore` is imported from `@a2a-js/sdk/server`. Task state is volatile (lost on restart).
+- Apps are markdown files at `~/.reef/apps/<appId>.md` — YAML frontmatter for metadata, markdown body for rules. Parsed by `app-markdown.ts`, managed by `app-store.ts`.
+- `AppManifest.type` is a required enum: `"p2p" | "coordinated"`. `buildAppManifest()` defaults to `"p2p"`. Validated by Zod (`z.enum(["p2p", "coordinated"])`).
+- Well-known apps (e.g., tic-tac-toe) are auto-installed to `~/.reef/apps/` on first daemon start. `reef apps read <appId>` prints rules for agents to reason about.
+- `reef apps validate <appId|file>` validates app markdown against the Zod schema.
 - Branch protection requires CI pass + 1 reviewer. Always work on feature branches.
