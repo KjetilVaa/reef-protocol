@@ -1,0 +1,9 @@
+{
+  "id": "reef",
+  "channels": ["reef"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": true,
+    "properties": {}
+  }
+}

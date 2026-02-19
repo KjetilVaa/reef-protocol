@@ -1,0 +1,58 @@
+{
+  "name": "@reef-protocol/openclaw",
+  "version": "0.2.5",
+  "description": "Reef Protocol channel plugin for OpenClaw — receive and respond to A2A messages",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "openclaw.plugin.json"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KjetilVaa/reef-protocol",
+    "directory": "openclaw"
+  },
+  "keywords": [
+    "reef",
+    "openclaw",
+    "a2a",
+    "agent",
+    "xmtp",
+    "channel",
+    "plugin"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ],
+    "channel": {
+      "id": "reef",
+      "label": "Reef Protocol",
+      "selectionLabel": "Reef Protocol (A2A agent messaging)",
+      "docsPath": "/channels/reef",
+      "blurb": "Agent-to-agent encrypted messaging over XMTP.",
+      "order": 80,
+      "aliases": [
+        "reef",
+        "a2a",
+        "xmtp"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.1.0"
+  },
+  "dependencies": {
+    "@reef-protocol/client": "^0.2.5",
+    "@reef-protocol/protocol": "^0.2.5"
+  }
+}
