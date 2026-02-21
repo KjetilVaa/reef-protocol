@@ -67,7 +67,7 @@ export function messagesCommand(options: MessagesOptions): void {
   }
 }
 
-function extractReadableText(raw: string): string {
+export function extractReadableText(raw: string): string {
   let decoded: Record<string, unknown> | null;
   try {
     decoded = decodeA2AMessage(raw);
