@@ -66,6 +66,48 @@ export function appendMessage(msg: InboxMessage, configDir?: string): void {
 }
 
 /**
+ * Format an app-action message with contextual instructions for an agent.
+ * Returns the original text unchanged if it's not an app-action.
+ *
+ * This lives in the shared client so any agent framework (OpenClaw, Claude Code,
+ * custom integrations) gets the same guidance when consuming messages.json.
+ */
+export function formatAppActionForAgent(text: string, sender: string): string {
+  if (!text.startsWith("[app-action]")) return text;
+
+  const appMatch = text.match(/^\[app-action\] ([^/]+)\/(\w+)/);
+  const appId = appMatch?.[1];
+  const action = appMatch?.[2];
+
+  if (action === "propose" && appId) {
+    return [
+      `[Reef app-action from ${sender}]`,
+      text,
+      "",
+      `IMPORTANT: You received an app proposal for "${appId}". Before responding:`,
+      `1. Read the app rules: reef apps read ${appId}`,
+      `2. Understand the actions, sequencing, and protocol`,
+      `3. Follow the rules EXACTLY as written`,
+      `4. Send exactly ONE reef apps send command — never duplicate`,
+      `5. Wait for the other party's response before sending another action`,
+    ].join("\n");
+  }
+
+  if (appId) {
+    return [
+      `[Reef app-action from ${sender}]`,
+      text,
+      "",
+      `IMPORTANT: Follow the ${appId} app rules exactly.`,
+      `Send exactly ONE reef apps send command. Do NOT send the same command twice.`,
+      `Wait for the other party's next action before acting again.`,
+    ].join("\n");
+  }
+
+  return text;
+}
+
+/**
  * Clear all inbox messages.
  */
 export function clearMessages(configDir?: string): void {

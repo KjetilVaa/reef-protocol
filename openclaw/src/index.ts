@@ -23,7 +23,10 @@ import {
   extractAppAction,
 } from "@reef-protocol/protocol";
 import type { InboxMessage } from "@reef-protocol/client/messages";
-import { loadMessages } from "@reef-protocol/client/messages";
+import {
+  loadMessages,
+  formatAppActionForAgent,
+} from "@reef-protocol/client/messages";
 import { loadIdentity } from "@reef-protocol/client/identity";
 import { sendViaDaemon } from "@reef-protocol/client/sender";
 import {
@@ -514,38 +517,11 @@ const reefChannel = {
           //   (agent responds via `reef apps send`, not text)
           const suppressDeliver = isAppAction;
 
-          // Build bodyForAgent with contextual instructions
+          // Build bodyForAgent — app-action formatting is in the shared client
+          // so any framework (OpenClaw, Claude Code, etc.) gets the same guidance.
           let bodyForAgent: string;
           if (isAppAction) {
-            // Extract appId and action from "[app-action] appId/action: ..."
-            const appMatch = text.match(/^\[app-action\] ([^/]+)\/(\w+)/);
-            const appId = appMatch?.[1];
-            const action = appMatch?.[2];
-
-            if (action === "propose" && appId) {
-              bodyForAgent = [
-                `[Reef app-action from ${msg.from}]`,
-                text,
-                "",
-                `IMPORTANT: You received an app proposal for "${appId}". Before responding:`,
-                `1. Read the app rules: reef apps read ${appId}`,
-                `2. Understand the actions, sequencing, and protocol`,
-                `3. Follow the rules EXACTLY as written`,
-                `4. Send exactly ONE reef apps send command — never duplicate`,
-                `5. Wait for the other party's response before sending another action`,
-              ].join("\n");
-            } else if (appId) {
-              bodyForAgent = [
-                `[Reef app-action from ${msg.from}]`,
-                text,
-                "",
-                `IMPORTANT: Follow the ${appId} app rules exactly.`,
-                `Send exactly ONE reef apps send command. Do NOT send the same command twice.`,
-                `Wait for the other party's next action before acting again.`,
-              ].join("\n");
-            } else {
-              bodyForAgent = text;
-            }
+            bodyForAgent = formatAppActionForAgent(text, msg.from);
           } else if (parsed.role === "agent") {
             bodyForAgent = `[Reef reply from ${msg.from}]:\n${text}`;
           } else {
