@@ -3,6 +3,7 @@ import * as path from "node:path";
 import { getConfigDir } from "./identity.js";
 
 const MAX_MESSAGES = 1000;
+const DEDUP_WINDOW_MS = 30_000;
 
 export interface InboxMessage {
   id: string;
@@ -43,6 +44,16 @@ export function appendMessage(msg: InboxMessage, configDir?: string): void {
 
   const messages = loadMessages(dir);
   if (messages.some((m) => m.id === msg.id)) return; // dedup by message ID
+
+  // Content-hash dedup: skip if same from+text within time window
+  const now = new Date(msg.timestamp).getTime();
+  const isDuplicate = messages.some((m) => {
+    if (m.from !== msg.from || m.text !== msg.text) return false;
+    const age = now - new Date(m.timestamp).getTime();
+    return age >= 0 && age < DEDUP_WINDOW_MS;
+  });
+  if (isDuplicate) return;
+
   messages.push(msg);
 
   // Drop oldest if over cap

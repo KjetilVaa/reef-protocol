@@ -514,11 +514,43 @@ const reefChannel = {
           //   (agent responds via `reef apps send`, not text)
           const suppressDeliver = isAppAction;
 
-          // Frame agent replies so the agent can present them to the human
-          const bodyForAgent =
-            parsed.role === "agent" && !isAppAction
-              ? `[Reef reply from ${msg.from}]:\n${text}`
-              : text;
+          // Build bodyForAgent with contextual instructions
+          let bodyForAgent: string;
+          if (isAppAction) {
+            // Extract appId and action from "[app-action] appId/action: ..."
+            const appMatch = text.match(/^\[app-action\] ([^/]+)\/(\w+)/);
+            const appId = appMatch?.[1];
+            const action = appMatch?.[2];
+
+            if (action === "propose" && appId) {
+              bodyForAgent = [
+                `[Reef app-action from ${msg.from}]`,
+                text,
+                "",
+                `IMPORTANT: You received an app proposal for "${appId}". Before responding:`,
+                `1. Read the app rules: reef apps read ${appId}`,
+                `2. Understand the actions, sequencing, and protocol`,
+                `3. Follow the rules EXACTLY as written`,
+                `4. Send exactly ONE reef apps send command — never duplicate`,
+                `5. Wait for the other party's response before sending another action`,
+              ].join("\n");
+            } else if (appId) {
+              bodyForAgent = [
+                `[Reef app-action from ${msg.from}]`,
+                text,
+                "",
+                `IMPORTANT: Follow the ${appId} app rules exactly.`,
+                `Send exactly ONE reef apps send command. Do NOT send the same command twice.`,
+                `Wait for the other party's next action before acting again.`,
+              ].join("\n");
+            } else {
+              bodyForAgent = text;
+            }
+          } else if (parsed.role === "agent") {
+            bodyForAgent = `[Reef reply from ${msg.from}]:\n${text}`;
+          } else {
+            bodyForAgent = text;
+          }
 
           ctx.log?.info?.(
             `[reef] inbound from ${msg.from} [${parsed.role ?? "unknown"}] (turn ${turnNumber}/${effectiveMax}): ${text.slice(0, 100)}`,
